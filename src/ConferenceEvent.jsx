@@ -168,7 +168,7 @@ const ConferenceEvent = () => {
                         <button className="btn-warning btn-minus"
                           onClick={() => handleDecrementAvQuantity(index)}> &ndash; </button>
                         <span className="quantity-value">{item.quantity}</span>
-                        <button className="btn-warning btn-plus" onClick={() => handleIncrementAvQuantity(index)}> &plus; </button>
+                        <button className="btn-warning btn-plus" onClick={() => handleIncrementAvQuantity(index)}> &#43; </button>
                       </div>
                     </div>
                   ))}
