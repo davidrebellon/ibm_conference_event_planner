@@ -4,12 +4,14 @@ import TotalCost from "./TotalCost";
 import { useSelector, useDispatch } from "react-redux";
 import { incrementQuantity, decrementQuantity } from "./venueSlice";
 import { incrementAvQuantity, decrementAvQuantity } from "./avSlice";
+import { toggleMealSelection } from "./mealsSlice";
 
 const ConferenceEvent = () => {
   const [showItems, setShowItems] = useState(false);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const venueItems = useSelector((state) => state.venue);
   const avItems = useSelector((state) => state.av);
+  const mealsItems = useSelector((state) => state.meals);
   const dispatch = useDispatch();
   const remainingAuditoriumQuantity = 3 - venueItems.find(item => item.name === "Auditorium Hall (Capacity:200)").quantity;
 
@@ -40,18 +42,80 @@ const ConferenceEvent = () => {
   };
 
   const handleMealSelection = (index) => {
-
+    dispatch(toggleMealSelection(index));
   };
 
   const getItemsFromTotalCost = () => {
     const items = [];
+    venueItems.forEach(item => {
+      if (item.quantity > 0) {
+        items.push({ ...item, type: 'venue' })
+      }
+    });
+
+    avItems.forEach(item => {
+      if (item.quantity > 0) {
+        items.push({ ...item, type: 'av' })
+      }
+    });
+
+    mealsItems.forEach(item => {
+      if (item.quantity > 0) {
+        items.push({ ...item, type: 'meal' })
+      }
+    });
+    return items
   };
 
   const items = getItemsFromTotalCost();
+  console.log('official items: ', items)
 
   const ItemsDisplay = ({ items }) => {
-
+    try {
+      console.log(items);
+      return (
+        <>
+          <div className="display_box1">
+            {items.length === 0 && <p>No items selected</p>}
+            <table className="table_item_data">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Unit Cost</th>
+                  <th>Quantity</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.name}</td>
+                    <td>${item.cost}</td>
+                    <td>
+                      {item.type === "meals" || item.numberOfPeople
+                        ? ` For ${numberOfPeople} people`
+                        : item.quantity}
+                    </td>
+                    <td>{item.type === "meals" || item.numberOfPeople
+                      ? `${item.cost * numberOfPeople}`
+                      : `${item.cost * item.quantity}`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )
+    } catch (err) {
+      return (
+        <>
+          <div>Oops! An error occurred...</div>
+        </>
+      )
+    }
   };
+
   const calculateTotalCost = (section) => {
     let totalCost = 0;
     if (section === "venue") {
@@ -62,11 +126,23 @@ const ConferenceEvent = () => {
       avItems.forEach((item) => {
         totalCost += item.cost * item.quantity;
       });
+    } else if (section === "meals") {
+      mealsItems.forEach((item) => {
+        if (item.selected) {
+          totalCost += item.cost * numberOfPeople
+        }
+      })
     }
     return totalCost;
   };
   const venueTotalCost = calculateTotalCost("venue");
   const avTotalCost = calculateTotalCost("av");
+  const mealsTotalCost = calculateTotalCost("meals")
+  const totalCosts = {
+    av: avTotalCost,
+    venue: venueTotalCost,
+    meals: mealsTotalCost
+  }
 
   const navigateToProducts = (idType) => {
     if (idType == '#venue' || idType == '#addons' || idType == '#meals') {
@@ -79,6 +155,7 @@ const ConferenceEvent = () => {
   return (
     <>
       <navbar className="navbar_event_conference">
+
         <div className="company_logo">Conference Expense Planner</div>
         <div className="left_navbar">
           <div className="nav_links">
@@ -86,10 +163,11 @@ const ConferenceEvent = () => {
             <a href="#addons" onClick={() => navigateToProducts('#addons')}>Add-ons</a>
             <a href="#meals" onClick={() => navigateToProducts('#meals')}>Meals</a>
           </div>
-          <button className="details_button" onClick={() => setShowItems(!showItems)}>
-            Show Details
-          </button>
         </div>
+        <button className="details_button" onClick={() => setShowItems(!showItems)}>
+          Show Details
+        </button>
+
       </navbar>
       <div className="main_container">
         {!showItems
@@ -163,7 +241,7 @@ const ConferenceEvent = () => {
                 </div>
                 <div className="addons_selection">
                   {avItems.map((item, index) => (
-                    <div className="" key={index}>
+                    <div className="addons_main" key={index}>
                       <div className="img">
                         <img src={item.img} alt={item.name} />
                       </div>
@@ -184,21 +262,33 @@ const ConferenceEvent = () => {
               {/* Meal Section */}
 
               <div id="meals" className="venue_container container_main">
-
                 <div className="text">
-
                   <h1>Meals Selection</h1>
                 </div>
-
                 <div className="input-container venue_selection">
-
+                  <label htmlFor="numberOfPeople"><h3>Number of People:</h3></label>
+                  <input type="number" className="input_box5" id="numberOfPeople" value={numberOfPeople}
+                    onChange={(e) => setNumberOfPeople(parseInt(e.target.value))}
+                    min="1"
+                  />
                 </div>
                 <div className="meal_selection">
-
+                  <div className="meal_selection">
+                    {mealsItems.map((item, index) => (
+                      <div className="meal_item" key={index} style={{ padding: 15 }}>
+                        <div className="inner">
+                          <input type="checkbox" id={`meal_${index}`}
+                            checked={item.selected}
+                            onChange={() => handleMealSelection(index)}
+                          />
+                          <label htmlFor={`meal_${index}`}> {item.name} </label>
+                        </div>
+                        <div className="meal_cost">${item.cost}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="total_cost">Total Cost: </div>
-
-
+                <div className="total_cost">Total Cost: ${mealsTotalCost}</div>
               </div>
             </div>
           ) : (
@@ -207,14 +297,11 @@ const ConferenceEvent = () => {
             </div>
           )
         }
-
-
-
-
       </div>
     </>
-
   );
 };
+
+
 
 export default ConferenceEvent;
